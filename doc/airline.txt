@@ -131,6 +131,10 @@ values):
 
 * enable spell detection >
   let g:airline_detect_spell=1
+
+* display spelling language when spell detection is enabled
+  (if enough space is available) >
+  let g:airline_detect_spelllang=1
 <
 * enable iminsert detection >
   let g:airline_detect_iminsert=0
@@ -452,8 +456,14 @@ syntastic <https://github.com/vim-syntastic/syntastic>
 * syntastic error_symbol >
   let airline#extensions#syntastic#error_symbol = 'E:'
 <
+* syntastic statusline error format (see |syntastic_stl_format|) >
+  let airline#extensions#syntastic#stl_format_err = '%E{[%e(#%fe)]}'
+
 * syntastic warning >
   let airline#extensions#syntastic#warning_symbol = 'W:'
+< 
+* syntastic statusline warning format (see |syntastic_stl_format|) >
+  let airline#extensions#syntastic#stl_format_err = '%W{[%w(#%fw)]}'
 <
 -------------------------------------                       *airline-tagbar*
 tagbar <https://github.com/majutsushi/tagbar>
