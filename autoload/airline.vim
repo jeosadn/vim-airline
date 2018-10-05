@@ -1,4 +1,4 @@
-" MIT License. Copyright (c) 2013-2016 Bailey Ling.
+" MIT License. Copyright (c) 2013-2018 Bailey Ling et al.
 " vim: et ts=2 sts=2 sw=2
 
 scriptencoding utf-8
@@ -34,6 +34,7 @@ function! airline#add_inactive_statusline_func(name)
 endfunction
 
 function! airline#load_theme()
+  let g:airline_theme = get(g:, 'airline_theme', 'dark')
   if exists('*airline#themes#{g:airline_theme}#refresh')
     call airline#themes#{g:airline_theme}#refresh()
   endif
@@ -67,7 +68,7 @@ function! airline#switch_theme(name)
   let w:airline_lastmode = ''
   call airline#load_theme()
 
-  silent doautocmd User AirlineAfterTheme
+  call airline#util#doautocmd('AirlineAfterTheme')
 
   " this is required to prevent clobbering the startup info message, i don't know why...
   call airline#check_mode(winnr())
@@ -102,14 +103,9 @@ function! airline#update_statusline()
   if airline#util#getwinvar(winnr(), 'airline_disabled', 0)
     return
   endif
-  for nr in filter(range(1, winnr('$')), 'v:val != winnr()')
-    if airline#util#getwinvar(nr, 'airline_disabled', 0)
-      continue
-    endif
-    call setwinvar(nr, 'airline_active', 0)
-    let context = { 'winnr': nr, 'active': 0, 'bufnr': winbufnr(nr) }
-    call s:invoke_funcrefs(context, s:inactive_funcrefs)
-  endfor
+  let range = filter(range(1, winnr('$')), 'v:val != winnr()')
+  " create inactive statusline
+  call airline#update_statusline_inactive(range)
 
   unlet! w:airline_render_left w:airline_render_right
   exe 'unlet! ' 'w:airline_section_'. join(s:sections, ' w:airline_section_')
@@ -117,6 +113,20 @@ function! airline#update_statusline()
   let w:airline_active = 1
   let context = { 'winnr': winnr(), 'active': 1, 'bufnr': winbufnr(winnr()) }
   call s:invoke_funcrefs(context, g:airline_statusline_funcrefs)
+endfunction
+
+function! airline#update_statusline_inactive(range)
+  if airline#util#getwinvar(winnr(), 'airline_disabled', 0)
+    return
+  endif
+  for nr in a:range
+    if airline#util#getwinvar(nr, 'airline_disabled', 0)
+      continue
+    endif
+    call setwinvar(nr, 'airline_active', 0)
+    let context = { 'winnr': nr, 'active': 0, 'bufnr': winbufnr(nr) }
+    call s:invoke_funcrefs(context, s:inactive_funcrefs)
+  endfor
 endfunction
 
 let s:contexts = {}
@@ -143,25 +153,34 @@ function! airline#statusline(winnr)
 endfunction
 
 function! airline#check_mode(winnr)
-  if !exists("s:airline_run")
-    let s:airline_run = 0
-  endif
-  let s:airline_run += 1
-
   let context = s:contexts[a:winnr]
 
   if get(w:, 'airline_active', 1)
-    let l:m = mode()
+    let l:m = mode(1)
     if l:m ==# "i"
       let l:mode = ['insert']
-    elseif l:m ==# "R"
+    elseif l:m[0] ==# "i"
+      let l:mode = ['insert']
+    elseif l:m ==# "Rv"
+      let l:mode =['replace']
+    elseif l:m[0] ==# "R"
       let l:mode = ['replace']
-    elseif l:m =~# '\v(v|V||s|S|)'
+    elseif l:m[0] =~# '\v(v|V||s|S|)'
       let l:mode = ['visual']
     elseif l:m ==# "t"
       let l:mode = ['terminal']
+    elseif l:m[0] ==# "c"
+      let l:mode = ['commandline']
+    elseif l:m ==# "no"   " does not work, most likely, Vim does not refresh the statusline in OP mode
+      let l:mode = ['normal']
+    elseif l:m[0:1] ==# 'ni'
+      let l:mode = ['normal']
+      let l:m = 'ni'
     else
       let l:mode = ['normal']
+    endif
+    if index(['Rv', 'no', 'ni', 'ix', 'ic'], l:m) == -1
+      let l:m = l:m[0]
     endif
     let w:airline_current_mode = get(g:airline_mode_map, l:m, l:m)
   else
@@ -190,16 +209,10 @@ function! airline#check_mode(winnr)
   endif
 
   let mode_string = join(l:mode)
-  if s:airline_run < 3
-    " skip this round.
-    " When this function is run too early after startup,
-    " it forces a redraw by vim which will remove the intro screen.
-    let w:airline_lastmode = mode_string
-    return ''
-  endif
   if get(w:, 'airline_lastmode', '') != mode_string
     call airline#highlighter#highlight_modified_inactive(context.bufnr)
     call airline#highlighter#highlight(l:mode, context.bufnr)
+    call airline#util#doautocmd('AirlineModeChanged')
     let w:airline_lastmode = mode_string
   endif
 
