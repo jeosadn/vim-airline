@@ -36,6 +36,7 @@ function! airline#init#bootstrap()
   call s:check_defined('g:airline_mode_map', {})
   call extend(g:airline_mode_map, {
         \ '__' : '------',
+        \ 'c'  : 'COMMAND',
         \ 'i'  : 'INSERT',
         \ 'ic' : 'INSERT COMPL',
         \ 'ix' : 'INSERT COMPL',
@@ -43,19 +44,19 @@ function! airline#init#bootstrap()
         \ 'ni' : '(INSERT)',
         \ 'no' : 'OP PENDING',
         \ 'R'  : 'REPLACE',
-        \ 'v'  : 'VISUAL',
-        \ 'V'  : 'V-LINE',
-        \ 'c'  : 'COMMAND',
-        \ '' : 'V-BLOCK',
+        \ 'Rv' : 'V REPLACE',
         \ 's'  : 'SELECT',
         \ 'S'  : 'S-LINE',
         \ '' : 'S-BLOCK',
         \ 't'  : 'TERMINAL',
-        \ 'Rv' : 'V REPLACE',
+        \ 'v'  : 'VISUAL',
+        \ 'V'  : 'V-LINE',
+        \ '' : 'V-BLOCK',
         \ }, 'keep')
 
   call s:check_defined('g:airline_theme_map', {})
   call extend(g:airline_theme_map, {
+        \ 'default': 'dark',
         \ '\CTomorrow': 'tomorrow',
         \ 'base16': 'base16',
         \ 'mo[l|n]okai': 'molokai',
@@ -193,7 +194,7 @@ function! airline#init#sections()
     let g:airline_section_y = airline#section#create_right(['ffenc'])
   endif
   if !exists('g:airline_section_z')
-    if winwidth(0) > 80
+    if airline#util#winwidth() > 80
       let g:airline_section_z = airline#section#create(['windowswap', 'obsession', '%3p%%'.spc, 'linenr', 'maxlinenr', spc.':%3v'])
     else
       let g:airline_section_z = airline#section#create(['%3p%%'.spc, 'linenr',  ':%3v'])
